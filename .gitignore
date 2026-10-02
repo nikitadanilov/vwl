@@ -1,0 +1,15 @@
+# environments and caches
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+# personal data: indexes, plans, extracted media, renders
+work/
+work-*/
+work_*/
+*.mp4
+*.mov
+# macOS
+.DS_Store
+._*

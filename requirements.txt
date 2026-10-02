@@ -1,0 +1,11 @@
+numpy
+pillow
+pillow-heif
+opencv-python-headless
+imageio-ffmpeg
+reverse_geocoder
+pycountry
+ijson
+requests
+nudenet
+pytest
