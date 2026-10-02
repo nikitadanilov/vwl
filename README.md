@@ -3,12 +3,13 @@
 Turn personal data exports (Google Takeout, Facebook, Instagram, X, iCloud, GPX…) into a video of a
 life as the data recorded it — or of two lives, with maps that split and merge as the worldlines do.
 
-[![10 seconds of a two-person film: Christmas 2022 to New Year 2023](docs/vwl-demo.webp)](docs/vwl-demo.mp4)
+[![10 seconds of a two-person film: Mumbai and Goa, December 2018](docs/vwl-demo.webp)](docs/vwl-demo.mp4)
 
-*Ten seconds from a two-person film (23 December 2022 – 4 January 2023): the opening title over a
-mosaic of every photo in the film, rows of photos while together, the screen splitting when the two
-are apart and merging when they meet, a video clip, year cards, the continuously moving map with its
-world locator, the timeline strip, and the closing mosaic. Click for the 1080p MP4.*
+*Ten seconds excerpted from a two-person film (19–26 December 2018): the opening title over a mosaic of
+every photo in the film; rows of photos while together; the screen splitting while one is in Goa and the
+other in Mumbai (the side without new photos shows its latest one, dimmed and undated); the maps merging
+when they meet again; video clips; the continuously moving map with its world locator; the timeline
+strip (scaled to the excerpt's days); and the closing mosaic. Click for the 1080p MP4.*
 
 * **photos** chosen from tens of thousands, morphing into each other (optical-flow warp and dissolve,
   slow Ken Burns zoom), captioned with date and place;
@@ -153,7 +154,10 @@ vwl render --work work_duo --out duo.mp4
 * **Shared copies**: a shot in both libraries (Partner Sharing, shared albums) is kept once, credited to
   the person whose own upload it is.
 * **Together / apart / unknown** on a 10-minute grid from both tracks (together = within 500 m); unknown
-  where either track has no data, which is never drawn as "apart".
+  where either track has no data, which is never drawn as "apart". Across a gap in someone's data, their
+  last position only counts while they evidently stayed put: if their next fix is elsewhere (a flight, a
+  drive), the gap is unknown rather than "still at home", so a sparse photo-only track can't make two
+  people travelling together look thousands of kilometres apart.
 * **Selection** per category — together, first person alone, second person alone — √-weighted, with
   together counting double.
 * **Screen layout**: the bottom third is a map band and never overlaps the photos.
