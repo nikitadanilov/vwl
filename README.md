@@ -1,7 +1,14 @@
 # virtual worldlines
 
 Turn personal data exports (Google Takeout, Facebook, Instagram, X, iCloud, GPX…) into a video of a
-life as the data recorded it:
+life as the data recorded it — or of two lives, with maps that split and merge as the worldlines do.
+
+[![10 seconds of a two-person film: Christmas 2022 to New Year 2023](docs/vwl-demo.webp)](docs/vwl-demo.mp4)
+
+*Ten seconds from a two-person film (23 December 2022 – 4 January 2023): the opening title over a
+mosaic of every photo in the film, rows of photos while together, the screen splitting when the two
+are apart and merging when they meet, a video clip, year cards, the continuously moving map with its
+world locator, the timeline strip, and the closing mosaic. Click for the 1080p MP4.*
 
 * **photos** chosen from tens of thousands, morphing into each other (optical-flow warp and dissolve,
   slow Ken Burns zoom), captioned with date and place;
@@ -59,6 +66,7 @@ python3 -m venv .venv
   | `--hold-video SEC` | how long a video clip is shown (shorter videos play in full) | 4.0 |
   | `--video-share X%` | at most this share of the items may be videos (`0` = photos only); a ceiling, not a quota | 15% |
   | `--transition SEC` | length of the morph between items (`0` = hard cut) | 1.0 |
+  | `--intro SEC`, `--outro SEC` | opening title over the photo mosaic; closing mosaic | 5, 6 |
   | `--size`, `--fps`, `--title` | output format, intro title | 1920x1080, 30 |
 
   Film length = 5 s intro + Σ holds + (N − 1) × transition + 6 s outro, e.g. 150 photos at 2.2 + 1.0 s ≈ 8 min;
@@ -155,7 +163,12 @@ vwl render --work work_duo --out duo.mp4
   * *Apart*: the screen splits down the middle — the first person's 1–2 photos above their map on the
     left (orange), the second person's on the right (cyan), each map on its own person's clock. If one
     side has no new photos for a while, it keeps showing that person's latest one.
+  * Every spread is a contiguous slice of time, so dates and the timeline playhead only move forward.
+    When one person has no new photos in a slice, their half shows their latest photo again, dimmed
+    and captioned "latest photo" without its old date, while their map follows the current time.
   * The layout switches during the transition between spreads; a single item never flips it on its own.
+  * `vwl relayout --work work_duo` regroups an existing plan with the current rules in seconds (no
+    re-selection or re-export); `--intro/--outro` there change the opening and closing lengths.
   * `--hold` is how long each photo is on screen, so a row of three stays up for one hold.
 * **Chapter cards**: "First days together" (first sustained co-location: ≥ 2 h on ≥ 3 days within a
   month; override with `--met DATE`) and "Together again, after N days apart" (> 60 days).

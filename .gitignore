@@ -13,3 +13,6 @@ work_*/
 # macOS
 .DS_Store
 ._*
+
+# the demo shown in the README
+!docs/vwl-demo.mp4
