@@ -164,7 +164,8 @@ def export_media(work: Path, items: list[dict], size, fps: int, workers: int):
 
 def run(work: Path, images: int | float = 120, hold: float = 2.2, trans: float = 1.0, fps: int = 30,
         size=(1920, 1080), t_from=None, t_to=None, workers: int = 8, title: str = "",
-        nsfw_filter: bool = True, hold_video: float = 4.0, video_share: float = 0.15) -> dict:
+        nsfw_filter: bool = True, hold_video: float = 4.0, video_share: float = 0.15,
+        intro: float = 5.0, outro: float = 6.0) -> dict:
     """Pick `images` photos and videos in [t_from, t_to] (an int, or a float in (0, 1] = that fraction
     of the items in range; at most `video_share` of them videos).  A photo is shown for `hold` s, a
     video for up to `hold_video` s (shorter videos play in full); each is followed by a `trans` s morph."""
@@ -186,7 +187,6 @@ def run(work: Path, images: int | float = 120, hold: float = 2.2, trans: float =
         pct = images
         images = max(2, round(pct * len(in_range)))
         print(f"[vwl] {pct * 100:.4g}% of {len(in_range)} photos and videos in range → {images}")
-    intro, outro = 5.0, 6.0
     n_vid = sum(p.kind == "video" for p in in_range)
     print(f"[vwl] selecting {images} of {len(in_range) - n_vid} photos and {n_vid} videos "
           f"(videos: at most {video_share * 100:.3g}%)")
@@ -271,7 +271,7 @@ def plan_items(plan: dict) -> list[dict]:
     out, seen = [], set()
     for s in plan["slots"]:
         for it in (s.get("items", []) + s.get("left", []) + s.get("right", []) if s.get("kind") == "spread" else [s]):
-            if it["file"] not in seen:
+            if it["file"] not in seen and not it.get("repeat"):
                 seen.add(it["file"])
                 out.append(it)
     return out

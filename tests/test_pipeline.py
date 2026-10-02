@@ -148,6 +148,20 @@ def test_two_people(indexed, tmp_path):
             assert all(it["owner"] == 0 for it in s["left"]) and all(it["owner"] == 1 for it in s["right"])
             assert 1 <= len(s["left"]) + len(s["right"]) <= 4
     assert all(it.get("aspect", 0) > 0 for s in p["slots"] for it in s.get("items", s.get("left", []) + s.get("right", [])))
+    # the film never goes back in time, and no photo is shown twice except as a marked "latest photo"
+    flat = [[it for it in s.get("items", []) + s.get("left", []) + s.get("right", []) if not it.get("repeat")]
+            for s in p["slots"]]
+    for a_, b_ in zip(flat[:-1], flat[1:]):
+        assert min(it["ts"] for it in b_) >= max(it["ts"] for it in a_)
+    files = [it["file"] for f in flat for it in f]
+    assert len(files) == len(set(files))
+    for s in p["slots"]:
+        if s["mode"] == "apart":
+            assert s["left"] and s["right"] or not any(  # a side is empty only before that person's first photo
+                it["owner"] == k for it in [x for f in flat for x in f] if it["ts"] < s["ts"] for k in (0, 1)
+                if not s[("left", "right")[k]])
+    # the map clocks and the playhead only move forward
+    assert all(a_["ts_by"][k] <= b_["ts_by"][k] for a_, b_ in zip(p["slots"][:-1], p["slots"][1:]) for k in (0, 1))
     # the partner-shared copy of Nikita's photo #40 is kept once, credited to Nikita
     people = duo.load_people([f"Nikita={work_n}", f"Olga={work_o}"])
     items = duo.merge_libraries(people, *p["range"])

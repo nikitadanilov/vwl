@@ -159,7 +159,9 @@ class DuoRenderer(Renderer):
         canvas = np.empty((self.lay.H, self.lay.W, 3), np.uint8)
         canvas[:] = self.BG
         for j, (it, (x, y, w, h)) in enumerate(self.cells(i)):
-            if it["kind"] == "video":
+            if it.get("repeat"):   # the person's latest photo, shown again: still and dimmed
+                cell = (self._photo(dict(it, file=it.get("poster", it["file"])), w, h) * 0.5).astype(np.uint8)
+            elif it["kind"] == "video":
                 cell = self._video(it, k, w, h)
             else:
                 drift = tuple(np.random.default_rng(i * 7 + j).uniform(-0.5, 0.5, 2))
@@ -174,9 +176,15 @@ class DuoRenderer(Renderer):
         return self.compose(i, 1.0, self.hold_frames[i] - 1)
 
     def item_caption(self, it):
-        key = ("icap", it["file"])
+        key = ("icap", it["file"], bool(it.get("repeat")))
         if key not in self.text:
             sc = self.lay.s
+            if it.get("repeat"):   # no date: an old date here would read as time going backwards
+                self.text[key] = O.shadowed_text([it.get("owner_name", ""), "latest photo"], [int(20 * sc), int(22 * sc)],
+                                                 ["SemiBold", "Italic"],
+                                                 [tuple(it.get("owner_color", (255, 255, 255))), (190, 190, 198)],
+                                                 gap=3, pad=14)
+                return self.text[key]
             lines = [it.get("owner_name", ""), it["date"]] + ([it["place"]] if it.get("place") else [])
             sizes = [int(20 * sc), int(30 * sc)] + [int(20 * sc)] * (len(lines) - 2)
             weights = ["SemiBold", "SemiBold"] + ["Regular"] * (len(lines) - 2)

@@ -93,6 +93,8 @@ def main(argv=None):
                        help="at most this share of the items may be videos; 0 = photos only (default: 15%%)")
         p.add_argument("--transition", "--trans", dest="trans", type=float, default=1.0, metavar="SEC",
                        help="seconds of morph between consecutive items (default: 1.0)")
+        p.add_argument("--intro", type=float, default=5.0, metavar="SEC", help="opening title over the photo mosaic (default: 5)")
+        p.add_argument("--outro", type=float, default=6.0, metavar="SEC", help="closing mosaic (default: 6)")
         p.add_argument("--fps", type=int, default=30)
         p.add_argument("--size", default="1920x1080")
         p.add_argument("--title", default="")
@@ -118,6 +120,10 @@ def main(argv=None):
     common(p); index_args(p)
     p = sub.add_parser("plan", help="select photos and pacing → work/plan.json")
     common(p); plan_args(p)
+    p = sub.add_parser("relayout", help="regroup a two-person plan with the current layout rules (fast, no re-selection)")
+    p.add_argument("--work", type=Path, default=Path("work"))
+    p.add_argument("--intro", type=float, metavar="SEC", help="change the opening length")
+    p.add_argument("--outro", type=float, metavar="SEC", help="change the closing length")
     p = sub.add_parser("render", help="render work/plan.json → video")
     common(p); render_args(p)
     p = sub.add_parser("all", help="index + plan + render")
@@ -139,10 +145,13 @@ def main(argv=None):
             a.work.mkdir(parents=True, exist_ok=True)
             duo.run(a.work, a.person, a.images, a.hold, a.trans, a.fps, (w, h), _date(a.t_from),
                     _date(a.t_to, end=True), a.workers, a.title, not a.no_nsfw_filter, a.hold_video,
-                    a.video_share, _date(a.met))
+                    a.video_share, _date(a.met), a.intro, a.outro)
         else:
             plan.run(a.work, a.images, a.hold, a.trans, a.fps, (w, h), _date(a.t_from), _date(a.t_to, end=True),
-                     a.workers, a.title, not a.no_nsfw_filter, a.hold_video, a.video_share)
+                     a.workers, a.title, not a.no_nsfw_filter, a.hold_video, a.video_share, a.intro, a.outro)
+    if a.cmd == "relayout":
+        from . import duo
+        duo.relayout(a.work, a.intro, a.outro)
     if a.cmd in ("render", "all"):
         from . import render
         render.run(a.work, a.out, a.style, a.workers, a.crf, a.preset, a.morph, a.music,

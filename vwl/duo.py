@@ -210,8 +210,12 @@ def display_modes(cp: dict, items: list[dict]) -> list[str]:
 
 def build_spreads(items: list[dict], cp: dict, lay: DuoLayout, hold: float) -> list[dict]:
     """Group the time-ordered items into spreads: rows of 1-3 photos across the screen while together;
-    while apart, the left half shows one person's 1-2 photos and the right half the other's.  If one
-    side runs out of photos during an apart stretch, it keeps showing that person's latest one."""
+    while apart, the left half shows one person's 1-2 photos and the right half the other's.
+
+    Every spread is a contiguous slice of time (the next items in date order), so the film never goes
+    back in time.  A side with no photos in its slice shows that person's latest photo again, marked
+    "repeat" (the renderer dims it and leaves its old date out); that person's map follows the
+    spread's own time, not the repeated photo's."""
     modes = display_modes(cp, items)
     runs = []
     for it, m in zip(items, modes):
@@ -219,21 +223,23 @@ def build_spreads(items: list[dict], cp: dict, lay: DuoLayout, hold: float) -> l
             runs[-1][1].append(it)
         else:
             runs.append((m, [it]))
-    spreads, last = [], [None, None]
+    spreads = []
 
-    def take(queue, region, kmax):
-        k = best_count([x["aspect"] for x in queue], region, lay.gap, kmax)
-        grp = queue[:k]
-        del queue[:k]
-        return grp
+    def fits(group, x, region, kmax):
+        """Would x join this row (the best count for the row with x is all of them)?"""
+        asp = [y["aspect"] for y in group] + [x["aspect"]]
+        return len(asp) <= kmax and best_count(asp, region, lay.gap, kmax) == len(asp)
+
+    last = [None, None]
 
     def spread(mode, groups):
-        flat = [x for g in groups for x in g]
+        flat = [x for g in groups for x in g if not x.get("repeat")]
         hold_s = max([hold] + [x["hold"] for x in flat if x["kind"] == "video"])
-        ts_by = [g[0]["ts"] if g else min(x["ts"] for x in flat) for g in groups] if mode == "apart" \
+        t0 = min(x["ts"] for x in flat)
+        ts_by = [g[0]["ts"] if g and not g[0].get("repeat") else t0 for g in groups] if mode == "apart" \
             else [flat[0]["ts"]] * 2
-        sp = {"kind": "spread", "mode": mode, "ts": min(x["ts"] for x in flat), "ts_by": ts_by,
-              "year": flat[0]["year"], "hold": round(hold_s, 3), "trans": 0.0}
+        sp = {"kind": "spread", "mode": mode, "ts": t0, "ts_by": ts_by,
+              "year": min(flat, key=lambda x: x["ts"])["year"], "hold": round(hold_s, 3), "trans": 0.0}
         if mode == "together":
             sp["items"] = groups[0]
         else:
@@ -241,26 +247,37 @@ def build_spreads(items: list[dict], cp: dict, lay: DuoLayout, hold: float) -> l
         return sp
 
     for mode, run in runs:
-        if mode == "together":
-            q = list(run)
-            while q:
-                grp = take(q, lay.photos_together, 3)
+        k = 0
+        while k < len(run):
+            if mode == "together":
+                grp = [run[k]]
+                k += 1
+                while k < len(run) and fits(grp, run[k], lay.photos_together, 3):
+                    grp.append(run[k])
+                    k += 1
                 for x in grp:
                     last[x["owner"]] = x
                 spreads.append(spread("together", [grp]))
-        else:
-            qa = [x for x in run if x["owner"] == 0]
-            qb = [x for x in run if x["owner"] == 1]
-            while qa or qb:
-                left = take(qa, lay.photos_left, 2) if qa else ([last[0]] if last[0] else [])
-                right = take(qb, lay.photos_right, 2) if qb else ([last[1]] if last[1] else [])
-                if left:
-                    last[0] = left[-1]
-                if right:
-                    last[1] = right[-1]
-                spreads.append(spread("apart", [left, right]))
+            else:
+                sides = ([], [])
+                regions = (lay.photos_left, lay.photos_right)
+                while k < len(run):
+                    x = run[k]
+                    side = sides[x["owner"]]
+                    if side and not fits(side, x, regions[x["owner"]], 2):
+                        break       # this side is full: the next item opens the next spread
+                    side.append(x)
+                    k += 1
+                for o in (0, 1):
+                    if sides[o]:
+                        last[o] = sides[o][-1]
+                    elif last[o] is not None:      # nothing new from this person: their latest photo again
+                        sides[o].append(dict(last[o], repeat=True))
+                spreads.append(spread("apart", list(sides)))
     n_t = sum(s["mode"] == "together" for s in spreads)
-    print(f"[vwl] {len(spreads)} spreads: {n_t} together, {len(spreads) - n_t} side by side")
+    n_rep = sum(s["mode"] == "apart" and any(x.get("repeat") for x in s["left"] + s["right"]) for s in spreads)
+    print(f"[vwl] {len(spreads)} spreads: {n_t} together, {len(spreads) - n_t} side by side"
+          + (f" ({n_rep} repeating one person's latest photo)" if n_rep else ""))
     return spreads
 
 
@@ -281,9 +298,42 @@ def chapters(slots: list[dict], cp: dict, met: float | None, t0: float):
             slots[k]["chapter"] = f"{text} · {fmt_date(when)}"
 
 
+def relayout(work: Path, intro: float | None = None, outro: float | None = None) -> dict:
+    """Regroup an existing two-person plan into spreads with the current rules — no re-selection, no
+    re-export: seconds instead of a full `plan`.  Optionally change the intro/outro lengths."""
+    path = work / "plan.json"
+    plan = json.load(open(path))
+    if not plan.get("persons"):
+        raise SystemExit("relayout is for two-person plans (made with --person)")
+    from .plan import plan_items
+    items = sorted(plan_items(plan), key=lambda x: x["ts"])
+    z = np.load(work / "duo.npz")
+    cp = {k: z[k] for k in z.files}
+    params = plan.get("params", {})
+    hold = params.get("hold") or min(it["hold"] for it in items if it["kind"] == "image")
+    trans = params.get("trans", plan["slots"][0]["trans"] if plan["slots"] else 1.0)
+    slots = build_spreads(items, cp, DuoLayout(*plan["size"]), hold)
+    for k, s in enumerate(slots):
+        s["trans"] = trans if k + 1 < len(slots) else 0.0
+    chapters(slots, cp, params.get("met"), plan["range"][0])
+    plan["slots"] = slots
+    plan["params"] = dict(params, hold=hold, trans=trans)
+    if intro is not None:
+        plan["intro"] = intro
+    if outro is not None:
+        plan["outro"] = outro
+    tmp = path.with_suffix(".tmp")
+    with open(tmp, "w") as f:
+        json.dump(plan, f, indent=1, ensure_ascii=False)
+    tmp.replace(path)
+    total = plan["intro"] + plan["outro"] + sum(s["hold"] + s["trans"] for s in slots)
+    print(f"[vwl] relayout: {len(items)} items in {len(slots)} spreads → {total:.0f}s ({int(total // 60)}:{int(total % 60):02d})")
+    return plan
+
+
 def run(work: Path, persons: list[str], images=120, hold=2.2, trans=1.0, fps=30, size=(1920, 1080),
         t_from=None, t_to=None, workers=8, title="", nsfw_filter=True, hold_video=4.0, video_share=0.15,
-        met: float | None = None) -> dict:
+        met: float | None = None, intro: float = 5.0, outro: float = 6.0) -> dict:
     people = load_people(persons)
     if t_from is None or t_to is None:
         o0, o1 = overlap(people)
@@ -337,7 +387,8 @@ def run(work: Path, persons: list[str], images=120, hold=2.2, trans=1.0, fps=30,
     duo = stats(cp, geo)
     np.savez_compressed(work / "duo.npz", t=cp["t"], state=cp["state"], dist=cp["dist"].astype(np.float32))
     n_vid = sum(x.kind == "video" for x, _ in library)
-    out = {"fps": fps, "size": list(size), "intro": 5.0, "outro": 6.0,
+    out = {"fps": fps, "size": list(size), "intro": intro, "outro": outro,
+           "params": {"hold": hold, "trans": trans, "met": met},
            "title": title or f"{people[0].name} & {people[1].name}", "range": [t_from, t_to],
            "persons": [{"name": p.name, "work": str(p.work.resolve()), "color": list(p.color)} for p in people],
            "stats": {"photos": len(library) - n_vid, "videos": n_vid,
