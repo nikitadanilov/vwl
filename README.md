@@ -39,7 +39,7 @@ python3 -m venv .venv
 
 ```bash
 # 1. index: safe to re-run whenever more takeout parts finish downloading
-.venv/bin/python -m vwl index /mnt/5tb/takeouts/nikita-google-takeout /mnt/5tb/takeouts/facebook-*.zip --work work
+.venv/bin/python -m vwl index ~/exports/google-takeout ~/exports/facebook-*.zip --work work
 
 # 2. plan: pick photos, write work/plan.json and work/contact_sheet.jpg
 .venv/bin/python -m vwl plan --work work --from 2005 --to 2024 --images 150 --hold 2.2 --transition 1.0
@@ -143,9 +143,9 @@ considered when favourited. Google-made compositions (collages, animations) are 
 One film of two worldlines, e.g. you and your partner. Index each person separately, then plan together:
 
 ```bash
-vwl index /mnt/5tb/takeouts/nikita-google-takeout --work work
-vwl index /mnt/5tb/takeouts/olga-google-takeout-2026.10.01 --work work_olga
-vwl plan  --work work_duo --person Nikita=work --person Olga=work_olga -n 150
+vwl index ~/exports/john --work work_john
+vwl index ~/exports/jane --work work_jane
+vwl plan  --work work_duo --person John=work_john --person Jane=work_jane -n 150
 vwl render --work work_duo --out duo.mp4
 ```
 

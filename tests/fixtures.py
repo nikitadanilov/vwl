@@ -171,22 +171,22 @@ def facebook(path: Path):
     posts = [
         {"timestamp": ts(33), "data": [{"post": mojibake("Париж, наконец-то! Walking along the Seine all afternoon.")}],
          "attachments": [{"data": [{"place": {"name": "Pont Neuf", "coordinate": {"latitude": 48.857, "longitude": 2.341}}}]}],
-         "title": "Nikita Danilov was at Pont Neuf."},
+         "title": "John Doe was at Pont Neuf."},
         {"timestamp": ts(12), "data": [{"post": "New job, new desk, same old coffee. Here we go."}],
          "attachments": [{"data": [{"media": {"uri": f"{root}/posts/media/Mobileuploads_1/fb1.jpg", "creation_timestamp": ts(12),
                                               "media_metadata": {"photo_metadata": {"exif_data": [{"latitude": 37.79, "longitude": -122.40}]}}}}]}]},
     ]
     z.writestr(f"{root}/posts/your_posts__check_ins__photos_and_videos_1.json", json.dumps(posts))
     z.writestr(f"{root}/comments_and_reactions/comments.json", json.dumps({"comments_v2": [
-        {"timestamp": ts(20), "data": [{"comment": {"timestamp": ts(20), "comment": "Congratulations, this is wonderful news!", "author": "Nikita Danilov"}}],
-         "title": "Nikita Danilov commented on Anna Smith's post."}]}))
-    msgs = {"participants": [{"name": "Anna Smith"}, {"name": "Nikita Danilov"}], "title": "Anna Smith",
-            "messages": [{"sender_name": "Nikita Danilov", "timestamp_ms": ts(29) * 1000, "content": "Flying to Paris tonight, will send pictures from the Louvre"},
+        {"timestamp": ts(20), "data": [{"comment": {"timestamp": ts(20), "comment": "Congratulations, this is wonderful news!", "author": "John Doe"}}],
+         "title": "John Doe commented on Anna Smith's post."}]}))
+    msgs = {"participants": [{"name": "Anna Smith"}, {"name": "John Doe"}], "title": "Anna Smith",
+            "messages": [{"sender_name": "John Doe", "timestamp_ms": ts(29) * 1000, "content": "Flying to Paris tonight, will send pictures from the Louvre"},
                          {"sender_name": "Anna Smith", "timestamp_ms": ts(29) * 1000 + 60000, "content": mojibake("Удачи! Bring back some croissants please")},
-                         {"sender_name": "Nikita Danilov", "timestamp_ms": ts(29) * 1000 + 120000, "content": "You sent an attachment."}]}
+                         {"sender_name": "John Doe", "timestamp_ms": ts(29) * 1000 + 120000, "content": "You sent an attachment."}]}
     z.writestr(f"{root}/messages/inbox/annasmith_123/message_1.json", json.dumps(msgs))
-    msgs2 = {"participants": [{"name": "Bob Jones"}, {"name": "Nikita Danilov"}], "title": "Bob Jones",
-             "messages": [{"sender_name": "Nikita Danilov", "timestamp_ms": ts(50) * 1000, "content": "Back home. Jet lag is brutal this time around."}]}
+    msgs2 = {"participants": [{"name": "Bob Jones"}, {"name": "John Doe"}], "title": "Bob Jones",
+             "messages": [{"sender_name": "John Doe", "timestamp_ms": ts(50) * 1000, "content": "Back home. Jet lag is brutal this time around."}]}
     z.writestr(f"{root}/messages/inbox/bobjones_456/message_1.json", json.dumps(msgs2))
     z.close()
 
@@ -206,8 +206,8 @@ def instagram(path: Path):
     z.writestr(f"{root}/comments/post_comments_1.json", json.dumps([
         {"string_map_data": {"Comment": {"value": "This view is unreal, where exactly is this?"}, "Media Owner": {"value": "travelfriend"}, "Time": {"timestamp": ts(40)}}}]))
     z.writestr(f"{root}/messages/inbox/friend_1/message_1.json", json.dumps({
-        "participants": [{"name": "friend"}, {"name": "nikita"}],
-        "messages": [{"sender_name": "nikita", "timestamp_ms": ts(45) * 1000, "content": "Photos from the trip are finally up on my profile!"}]}))
+        "participants": [{"name": "friend"}, {"name": "john"}],
+        "messages": [{"sender_name": "john", "timestamp_ms": ts(45) * 1000, "content": "Photos from the trip are finally up on my profile!"}]}))
     z.close()
 
 
@@ -226,8 +226,8 @@ def x_archive(path: Path):
 MOSCOW = (55.7558, 37.6173)
 
 
-def olga(path: Path):
-    """Second person: Moscow for 35 days, then joins Nikita in Paris and travels with him (≈100 m apart)."""
+def jane(path: Path):
+    """Second person: Moscow for 35 days, then joins John in Paris and travels with him (≈100 m apart)."""
     z = zipfile.ZipFile(path, "w")
     nik = track()
     r = np.random.default_rng(7)
@@ -251,7 +251,7 @@ def olga(path: Path):
             "title": name, "photoTakenTime": {"timestamp": str(int(dt.timestamp()))},
             "geoData": {"latitude": la, "longitude": lo},
             "googlePhotosOrigin": {"mobileUpload": {"deviceType": "IOS_PHONE"}}}))
-    # a copy of Nikita's photo #40 that he shared with her via Partner Sharing
+    # a copy of John's photo #40 that he shared with her via Partner Sharing
     dt = T0 + timedelta(days=40 * 70 / 60, hours=3)
     name = f"IMG_{dt:%Y%m%d_%H%M%S}.jpg"
     z.writestr(f"{folder}/{name}", picture(40))
@@ -266,8 +266,8 @@ def make_all(out: Path):
     google(out / "takeout-20190801T000000Z-001.zip")
     phone_timeline(out / "Timeline.json")
     ios_timeline(out / "location-history.json")
-    facebook(out / "facebook-nikita-2025.zip")
-    instagram(out / "instagram-nikita-2025.zip")
+    facebook(out / "facebook-john-2025.zip")
+    instagram(out / "instagram-john-2025.zip")
     x_archive(out / "twitter-2025.zip")
     (out / "partial-download.zip").write_bytes(b"PK\x03\x04 incomplete")
     return out

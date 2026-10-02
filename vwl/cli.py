@@ -1,10 +1,10 @@
 """vwl — virtual worldlines: turn personal data exports into a life video.
 
-  python -m vwl index  /mnt/5tb/takeouts ~/exports/instagram-*.zip   --work work
+  python -m vwl index  ~/exports ~/exports/instagram-*.zip   --work work
   python -m vwl plan   --work work --from 2014 --to 2019-06 --images 150 --hold 2.5 --transition 0.8
   python -m vwl render --work work --out life.mp4 --workers 12
   python -m vwl render --work work --preview-at 42 --out frame.png
-  python -m vwl all    /mnt/5tb/takeouts --work work --out life.mp4
+  python -m vwl all    ~/exports --work work --out life.mp4
 """
 from __future__ import annotations
 
@@ -100,7 +100,7 @@ def main(argv=None):
         p.add_argument("--title", default="")
         p.add_argument("--no-nsfw-filter", action="store_true", help="don't drop photos a local NudeNet model flags")
         p.add_argument("--person", action="append", default=[], metavar="NAME=WORK_DIR",
-                       help="two-person film: give twice, e.g. --person Nikita=work --person Olga=work_olga "
+                       help="two-person film: give twice, e.g. --person John=work_john --person Jane=work_jane "
                             "(each WORK_DIR indexed separately); --work is then where the joint plan goes")
         p.add_argument("--met", metavar="DATE", help="two-person film: date of the first time together "
                        "(default: detected as the first sustained co-location)")

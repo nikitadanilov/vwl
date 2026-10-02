@@ -48,7 +48,7 @@ def test_index(indexed):
     assert by["facebook/message_out"] == 3 and by["facebook/message_in"] == 1
     assert by["instagram/post"] == 1 and by["instagram/story"] == 1 and by["instagram/comment"] == 1
     assert by["x/post"] == 1
-    assert s["self_names"]["facebook"] == "Nikita Danilov"
+    assert s["self_names"]["facebook"] == "John Doe"
     txt = " ".join(x.text for x in social)
     assert "Париж" in txt and "Удачи" in txt and "✨" in txt  # mojibake repaired
     assert "t.co" not in txt and "RT @" not in txt
@@ -119,17 +119,17 @@ def test_video_clips(indexed, tmp_path):
 
 
 def test_two_people(indexed, tmp_path):
-    from tests.fixtures import olga
+    from tests.fixtures import jane
     from vwl import duo
     work_n, _ = indexed
-    exports = tmp_path / "olga"
+    exports = tmp_path / "jane"
     exports.mkdir()
-    olga(exports / "takeout-olga-001.zip")
-    work_o = tmp_path / "work_olga"
+    jane(exports / "takeout-jane-001.zip")
+    work_o = tmp_path / "work_jane"
     index.run([str(exports)], work_o, workers=2)
     work = tmp_path / "duo"
     work.mkdir()
-    p = duo.run(work, [f"Nikita={work_n}", f"Olga={work_o}"], images=24, hold=1.0, trans=0.6, fps=12,
+    p = duo.run(work, [f"John={work_n}", f"Jane={work_o}"], images=24, hold=1.0, trans=0.6, fps=12,
                 size=(640, 360), workers=2, video_share=0)
     st = p["stats"]
     # together from day 35 (Paris) to day 70; both have data for ~70 days
@@ -162,8 +162,8 @@ def test_two_people(indexed, tmp_path):
                 if not s[("left", "right")[k]])
     # the map clocks and the playhead only move forward
     assert all(a_["ts_by"][k] <= b_["ts_by"][k] for a_, b_ in zip(p["slots"][:-1], p["slots"][1:]) for k in (0, 1))
-    # the partner-shared copy of Nikita's photo #40 is kept once, credited to Nikita
-    people = duo.load_people([f"Nikita={work_n}", f"Olga={work_o}"])
+    # the partner-shared copy of John's photo #40 is kept once, credited to John
+    people = duo.load_people([f"John={work_n}", f"Jane={work_o}"])
     items = duo.merge_libraries(people, *p["range"])
     copies = [(x, o) for x, o in items if x.title.startswith("IMG_") and abs(x.ts - (people[0].photos[0].ts)) >= 0
               and x.title in {y.title for y in people[1].photos}]

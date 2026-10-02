@@ -9,7 +9,7 @@ General rules:
 * **Always pick JSON** (machine-readable) when a service offers HTML vs JSON.
 * **Pick "all time"** and **high media quality**.
 * Download links usually **expire in 4–7 days**, so start the download when you get the email.
-* Put everything under one folder (e.g. `/mnt/5tb/takeouts`). `vwl index` finds the zips at any depth,
+* Put everything under one folder (e.g. `~/exports`). `vwl index` finds the zips at any depth,
   skips zips that are still downloading, and only scans new or changed zips on re-runs.
 
 | Source | What `vwl` uses | Parsed today |
