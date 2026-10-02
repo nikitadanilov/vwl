@@ -3,13 +3,13 @@
 Turn personal data exports (Google Takeout, Facebook, Instagram, X, iCloud, GPX…) into a video of a
 life as the data recorded it — or of two lives, with maps that split and merge as the worldlines do.
 
-[![10 seconds of a two-person film: Mumbai and Goa, December 2018](docs/vwl-demo.webp)](docs/vwl-demo.mp4)
+[![10 seconds of a two-person film: Toronto, Montreal and Cuba, March 2020](docs/vwl-demo.webp)](docs/vwl-demo.mp4)
 
-*Ten seconds excerpted from a two-person film (19–26 December 2018): the opening title over a mosaic of
-every photo in the film; rows of photos while together; the screen splitting while one is in Goa and the
-other in Mumbai (the side without new photos shows its latest one, dimmed and undated); the maps merging
-when they meet again; video clips; the continuously moving map with its world locator; the timeline
-strip (scaled to the excerpt's days); and the closing mosaic. Click for the 1080p MP4.*
+*Ten seconds excerpted from a two-person film (19–22 March 2020): the opening title over a mosaic of
+every photo in the film; rows of photos while together in Toronto; a video clip; the screen splitting
+while one of them is in Toronto and the other near Montreal, and merging again; the flight to Cuba, with
+the map zooming out over North America and back in on Varadero; the world locator; the timeline strip
+(scaled to the excerpt's days); and the closing mosaic. Click for the 1080p MP4.*
 
 * **photos** chosen from tens of thousands, morphing into each other (optical-flow warp and dissolve,
   slow Ken Burns zoom), captioned with date and place;
@@ -178,7 +178,8 @@ vwl render --work work_duo --out duo.mp4
   month; override with `--met DATE`) and "Together again, after N days apart" (> 60 days).
 * **Timeline strip**: distance between you over time (log scale): gold = together, tall = far apart, grey = no data.
 * **Totals**: days together (of days with data from both), km travelled together, countries together
-  (≥ 2 h there), longest time apart, furthest apart.
+  (≥ 2 h there), longest time apart, furthest apart (the largest daily median distance, so a few hours
+  of stale data during a shared flight don't count).
 
 ## Social-network exports
 
