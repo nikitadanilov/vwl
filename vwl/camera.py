@@ -16,6 +16,7 @@ from .mapview import min_span, to_world, zoom_for_bbox
 GAP = 6 * 3600          # interpolate the position only between fixes at most this far apart
 STALE = 2 * 86400       # further than this from any fix, the position is unknown
 SPAN_MIN = 1.3e-4       # smallest map view (world units), ≈ 3-5 km
+MOVED = 6e-4            # world units (≈ 15-25 km): fixes further apart mean the person moved
 DAILY_AFTER = 2 * 86400 # between photos further apart than this, the route is one point per day
 MAX_ROUTE = 300         # at most this many route points per hop
 ZOOM_LAG = 2.0          # zoom is smoothed this many times more slowly than the pan
@@ -54,9 +55,14 @@ class Track:
         self.has = len(self.t) > 0
         self._daily = None
 
-    def where(self, tq) -> np.ndarray:
+    def where(self, tq, strict: bool = False) -> np.ndarray:
         """Gap-aware position at times tq: linear between fixes at most GAP apart; across a longer
-        gap, the last known fix; NaN when no fix lies within STALE (before or after)."""
+        gap, the last known fix; NaN when no fix lies within STALE (before or after).
+
+        strict: across a longer gap, hold the last fix only if the person didn't move during it
+        (the fixes before and after are close); otherwise NaN.  Deciding "together" or "apart" needs
+        this: a person whose photos say Los Angeles on Monday and Maui on Wednesday was not in Los
+        Angeles all along."""
         t, mx, my = self.t, self.mx, self.my
         tq = np.atleast_1d(np.asarray(tq, np.float64))
         out = np.full((len(tq), 2), np.nan)
@@ -75,6 +81,13 @@ class Track:
         hold_prev = ~lerp & (k > 0) & (dt_prev <= STALE)
         out[hold_prev, 0], out[hold_prev, 1] = mx[prv][hold_prev], my[prv][hold_prev]
         out[np.minimum(dt_prev, dt_next) > STALE] = np.nan
+        if strict:  # across a gap in which the person moved: only near a fix, at that fix
+            moved = ~lerp & (k > 0) & (k < len(t)) & (np.hypot(mx[nxt] - mx[prv], my[nxt] - my[prv]) > MOVED)
+            use_prev = moved & (dt_prev <= GAP) & (dt_prev <= dt_next)
+            use_next = moved & (dt_next <= GAP) & ~use_prev
+            out[moved] = np.nan
+            out[use_prev, 0], out[use_prev, 1] = mx[prv][use_prev], my[prv][use_prev]
+            out[use_next, 0], out[use_next, 1] = mx[nxt][use_next], my[nxt][use_next]
         return out
 
     def daily(self):

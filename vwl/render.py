@@ -203,17 +203,17 @@ class Renderer:
         key = ("title", final)
         if key not in self.text:
             p, st, sc = self.plan, self.plan["stats"], self.lay.s
-            span = f"{st['span'][0]} — {st['span'][1]}" if st.get("span") else ""
-            nums = [f"{st['photos']:,} photos"]
+            span = O.span_text(st.get("span"))
+            nums = [O.plural(st["photos"], "photo")]
             if st.get("videos"):
-                nums.append(f"{st['videos']:,} videos")
+                nums.append(O.plural(st["videos"], "video"))
             if st.get("location_points"):
-                nums.append(f"{st['location_points']:,} location fixes")
+                nums.append(f"{st['location_points']:,} location fix" + ("" if st["location_points"] == 1 else "es"))
             extra = []
             if st.get("km"):
                 extra.append(f"{st['km']:,} km between recorded places")
             if st.get("countries"):
-                extra.append(f"{st['countries']} countries")
+                extra.append("1 country" if st["countries"] == 1 else f"{st['countries']} countries")
             lines = [p.get("title") or "A life, as recorded", span, "  ·  ".join(nums)]
             sizes, weights = [int(72 * sc), int(40 * sc), int(26 * sc)], ["Bold", "Light", "Regular"]
             if extra:

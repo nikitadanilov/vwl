@@ -336,15 +336,16 @@ class DuoRenderer(Renderer):
         key = ("title", final)
         if key not in self.text:
             p, st, sc = self.plan, self.plan["stats"], self.lay.s
-            span = f"{st['span'][0]} — {st['span'][1]}" if st.get("span") else ""
-            nums = [f"{st['days_together']:,} days together"]
+            span = O.span_text(st.get("span"))
+            nums = [O.plural(st["days_together"], "day") + " together"]
             if st.get("km_together"):
                 nums.append(f"{st['km_together']:,} km together")
             if st.get("countries_together"):
-                nums.append(f"{st['countries_together']} countries together")
+                nums.append(("1 country" if st["countries_together"] == 1 else f"{st['countries_together']} countries")
+                            + " together")
             extra = []
             if st.get("longest_apart_days"):
-                extra.append(f"longest apart: {st['longest_apart_days']} days")
+                extra.append("longest apart: " + O.plural(st["longest_apart_days"], "day"))
             if st.get("furthest_km"):
                 extra.append(f"furthest apart: {st['furthest_km']:,} km")
             lines = [p["title"], span, "  ·  ".join(nums)] + (["  ·  ".join(extra)] if extra else [])

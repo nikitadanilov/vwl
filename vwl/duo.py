@@ -120,7 +120,7 @@ def haversine_m(la1, lo1, la2, lo2):
 def copresence(people: list[Person], t0: float, t1: float) -> dict:
     """State per 10-minute step: together (both known, ≤ TOGETHER_M apart), apart, or unknown."""
     t = np.arange(t0, t1, STEP, dtype=np.float64)
-    pa, pb = people[0].track.where(t), people[1].track.where(t)
+    pa, pb = people[0].track.where(t, strict=True), people[1].track.where(t, strict=True)
     la, lo = from_world(pa[:, 0], pa[:, 1])
     lb, lob = from_world(pb[:, 0], pb[:, 1])
     known = ~np.isnan(pa[:, 0]) & ~np.isnan(pb[:, 0])
@@ -307,8 +307,15 @@ def relayout(work: Path, intro: float | None = None, outro: float | None = None)
         raise SystemExit("relayout is for two-person plans (made with --person)")
     from .plan import plan_items
     items = sorted(plan_items(plan), key=lambda x: x["ts"])
-    z = np.load(work / "duo.npz")
-    cp = {k: z[k] for k in z.files}
+    # together/apart and the totals are recomputed from both tracks, so rule changes reach old plans
+    t0, t1 = plan["range"]
+    people = load_people([f"{q['name']}={q['work']}" for q in plan["persons"]])
+    for q in people:
+        m = (q.loc["t"] >= t0) & (q.loc["t"] <= t1)
+        q.loc = {k: v[m] for k, v in q.loc.items()}
+    cp = copresence(people, t0, t1)
+    np.savez_compressed(work / "duo.npz", t=cp["t"], state=cp["state"], dist=cp["dist"].astype(np.float32))
+    plan["stats"].update(stats(cp, Geocoder()))
     params = plan.get("params", {})
     hold = params.get("hold") or min(it["hold"] for it in items if it["kind"] == "image")
     trans = params.get("trans", plan["slots"][0]["trans"] if plan["slots"] else 1.0)

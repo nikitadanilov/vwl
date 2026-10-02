@@ -81,6 +81,54 @@ def shadowed_text(lines, sizes, weights, colors, gap=6, pad=24) -> np.ndarray:
     return to_rgba(Image.alpha_composite(base, im))
 
 
+def _ticks(d, t0: float, t1: float, x_of, height: int, scale: float, max_labels: int = 12):
+    """Tick marks suited to the span: years for a long film, months for a year or two, days for an
+    excerpt of a few weeks.  A year boundary is always labelled with the year."""
+    days = (t1 - t0) / 86400
+    a, b = datetime.fromtimestamp(t0, timezone.utc), datetime.fromtimestamp(t1, timezone.utc)
+    if days > 3 * 365:
+        marks = [datetime(y, 1, 1, tzinfo=timezone.utc) for y in range(a.year + 1, b.year + 1)]
+        label = lambda m: str(m.year)  # noqa: E731
+    elif days > 75:
+        marks = []
+        y, mo = a.year, a.month
+        while True:
+            mo += 1
+            if mo > 12:
+                y, mo = y + 1, 1
+            m = datetime(y, mo, 1, tzinfo=timezone.utc)
+            if m > b:
+                break
+            marks.append(m)
+        label = lambda m: str(m.year) if m.month == 1 else m.strftime("%b")  # noqa: E731
+    else:
+        start = datetime(a.year, a.month, a.day, tzinfo=timezone.utc)
+        marks = [datetime.fromtimestamp(start.timestamp() + k * 86400, timezone.utc)
+                 for k in range(1, int(days) + 2)]
+        marks = [m for m in marks if m.timestamp() <= t1]
+        label = lambda m: str(m.year) if (m.month, m.day) == (1, 1) else f"{m.day} {m.strftime('%b')}"  # noqa: E731
+    f = font(int(15 * scale), "Medium")
+    step = max(1, -(-len(marks) // max_labels))
+    for k, m in enumerate(marks):
+        x = x_of(m.timestamp())
+        major = (m.month, m.day) == (1, 1)
+        d.line((x, 0, x, height), fill=(255, 255, 255, 90 if major else 40))
+        if k % step == 0 or major:
+            d.text((x + 4, 2), label(m), font=f, fill=(200, 200, 200, 200))
+
+
+def plural(n: int, word: str) -> str:
+    """'1 day', '7 days', '1,821 days' (regular English plurals only)."""
+    return f"{n:,} {word}" if n == 1 else f"{n:,} {word}s"
+
+
+def span_text(span) -> str:
+    """'2017 — 2025', or just '2018' when it starts and ends in the same year."""
+    if not span:
+        return ""
+    return str(span[0]) if span[0] == span[1] else f"{span[0]} — {span[1]}"
+
+
 def timeline_strip(slots, loc_ts, t0, t1, width, height, scale) -> tuple[np.ndarray, callable]:
     """Static histogram (shown photos above, location-data density below) + a mapper ts→x."""
     im = Image.new("RGBA", (width, height), (0, 0, 0, 0))
@@ -108,16 +156,7 @@ def timeline_strip(slots, loc_ts, t0, t1, width, height, scale) -> tuple[np.ndar
                 d.rectangle((x0, mid - hpx, int((i + 1) * bw) - 1, mid - 1), fill=col)
             else:
                 d.rectangle((x0, mid + 1, int((i + 1) * bw) - 1, mid + max(1, hpx // 2)), fill=col)
-    f = font(int(15 * scale), "Medium")
-    y0 = datetime.fromtimestamp(t0, timezone.utc).year
-    y1 = datetime.fromtimestamp(t1, timezone.utc).year
-    step = max(1, (y1 - y0 + 1) // 12)
-    for y in range(y0 + 1, y1 + 1):
-        ts = datetime(y, 1, 1, tzinfo=timezone.utc).timestamp()
-        x = x_of(ts)
-        d.line((x, 0, x, height), fill=(255, 255, 255, 40))
-        if (y - y0) % step == 0:
-            d.text((x + 4, 2), str(y), font=f, fill=(200, 200, 200, 200))
+    _ticks(d, t0, t1, x_of, height, scale)
     return to_rgba(im), x_of
 
 
@@ -131,6 +170,8 @@ def timeline_strip_duo(cp_t, cp_state, cp_dist, t0, t1, width, height, scale) ->
 
     def x_of(ts):
         return int((ts - t0) / span * (width - 1))
+    inside = (cp_t >= t0) & (cp_t <= t1)       # an excerpt's strip covers only its own dates
+    cp_t, cp_state, cp_dist = cp_t[inside], cp_state[inside], cp_dist[inside]
     col = np.clip(((cp_t - t0) / span * width).astype(int), 0, width - 1)
     known = cp_state > 0
     n_all = np.bincount(col, minlength=width)
@@ -151,14 +192,5 @@ def timeline_strip_duo(cp_t, cp_state, cp_dist, t0, t1, width, height, scale) ->
         h = max(h * (1 - frac_t), 2 * scale)
         c = tuple(int(a * frac_t + b * (1 - frac_t)) for a, b in zip((255, 214, 110), (205, 205, 215)))
         d.line((x, base - int(h), x, base), fill=c + (215,))
-    f = font(int(15 * scale), "Medium")
-    y0 = datetime.fromtimestamp(t0, timezone.utc).year
-    y1 = datetime.fromtimestamp(t1, timezone.utc).year
-    step = max(1, (y1 - y0 + 1) // 12)
-    for y in range(y0 + 1, y1 + 1):
-        ts = datetime(y, 1, 1, tzinfo=timezone.utc).timestamp()
-        x = x_of(ts)
-        d.line((x, 0, x, height), fill=(255, 255, 255, 40))
-        if (y - y0) % step == 0:
-            d.text((x + 4, 2), str(y), font=f, fill=(200, 200, 200, 200))
+    _ticks(d, t0, t1, x_of, height, scale)
     return to_rgba(im), x_of
