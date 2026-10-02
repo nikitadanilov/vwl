@@ -160,8 +160,17 @@ def stats(cp: dict, geo: Geocoder) -> dict:
     d0, both, tog = daily(cp)
     together_days = np.flatnonzero(tog >= 6)                     # ≥ 1 h together
     gaps = np.diff(together_days) if len(together_days) > 1 else np.array([0])
+    # furthest apart: the largest daily median distance (days with ≥ 1 h known for both), so a few
+    # hours of a stale photo fix during a shared flight can't produce "2,000 km apart"
     known = cp["state"] != UNKNOWN
-    far = float(np.nanpercentile(cp["dist"][known], 99.9)) / 1000 if known.any() else 0.0
+    kday = (cp["t"] // 86400).astype(np.int64)[known]
+    kdist = cp["dist"][known]
+    far = 0.0
+    if len(kdist):
+        starts = np.r_[0, np.flatnonzero(np.diff(kday)) + 1]
+        ends = np.r_[starts[1:], len(kday)]
+        meds = [np.median(kdist[a:b]) for a, b in zip(starts, ends) if b - a >= 6]
+        far = float(max(meds)) / 1000 if meds else 0.0
     # km travelled together: between daily median positions on consecutive together days
     tg = cp["state"] == TOGETHER
     day = (cp["t"] // 86400).astype(np.int64) - d0
